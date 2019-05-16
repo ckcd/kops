@@ -17,7 +17,10 @@ limitations under the License.
 package awsup
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -267,7 +270,15 @@ func NewAWSCloud(region string, tags map[string]string) (AWSCloud, error) {
 		if err != nil {
 			return c, err
 		}
-		c.route53 = route53.New(sess, config)
+
+		route53Config := config
+		route53Region := os.Getenv("ROUTE53_REGION")
+		route53EndpointURL := os.Getenv("ROUTE53_ENDPOINT_URL")
+		glog.V(4).Infof("[NewAWSCloud()] got provider: route53 China, set route53Region: %s, route53EndpointURL: %s", route53Region, route53EndpointURL)
+		route53Config.Region = &route53Region
+		route53Config.Endpoint = &route53EndpointURL
+
+		c.route53 = route53.New(sess, route53Config)
 		c.route53.Handlers.Send.PushFront(requestLogger)
 		c.addHandlers(region, &c.route53.Handlers)
 
@@ -1258,7 +1269,18 @@ func ValidateZones(zones []string, cloud AWSCloud) error {
 }
 
 func (c *awsCloudImplementation) DNS() (dnsprovider.Interface, error) {
-	provider, err := dnsprovider.GetDnsProvider(dnsproviderroute53.ProviderName, nil)
+	route53Region := os.Getenv("ROUTE53_REGION")
+	route53EndpointURL := os.Getenv("ROUTE53_ENDPOINT_URL")
+
+	var file io.Reader
+	glog.V(4).Infof("[DNS()] got provider: route53 China, set route53Region: %s, route53EndpointURL: %s", route53Region, route53EndpointURL)
+	var lines []string
+	lines = append(lines, "route53-region = "+route53Region)
+	lines = append(lines, "route53-endpoint-url = "+route53EndpointURL)
+	config := "[global]\n" + strings.Join(lines, "\n") + "\n"
+	file = bytes.NewReader([]byte(config))
+
+	provider, err := dnsprovider.GetDnsProvider(dnsproviderroute53.ProviderName, file)
 	if err != nil {
 		return nil, fmt.Errorf("Error building (k8s) DNS provider: %v", err)
 	}

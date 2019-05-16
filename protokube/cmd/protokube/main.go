@@ -36,6 +36,7 @@ import (
 	// Load DNS plugins
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
+	"k8s.io/kops/dnsprovider/pkg/dnsprovider/providers/aws/route53"
 	_ "k8s.io/kops/dnsprovider/pkg/dnsprovider/providers/aws/route53"
 	k8scoredns "k8s.io/kops/dnsprovider/pkg/dnsprovider/providers/coredns"
 	_ "k8s.io/kops/dnsprovider/pkg/dnsprovider/providers/google/clouddns"
@@ -65,6 +66,7 @@ func run() error {
 	var flagChannels, tlsCert, tlsKey, tlsCA, peerCert, peerKey, peerCA string
 	var etcdBackupImage, etcdBackupStore, etcdImageSource, etcdElectionTimeout, etcdHeartbeatInterval string
 	var dnsUpdateInterval int
+	var route53Region, route53EndpointURL string
 
 	flag.BoolVar(&applyTaints, "apply-taints", applyTaints, "Apply taints to nodes based on the role")
 	flag.BoolVar(&containerized, "containerized", containerized, "Set if we are running containerized.")
@@ -92,6 +94,8 @@ func run() error {
 	flags.StringVar(&etcdElectionTimeout, "etcd-election-timeout", etcdElectionTimeout, "time in ms for an election to timeout")
 	flags.StringVar(&etcdHeartbeatInterval, "etcd-heartbeat-interval", etcdHeartbeatInterval, "time in ms of a heartbeat interval")
 	flags.StringVar(&gossipSecret, "gossip-secret", gossipSecret, "Secret to use to secure gossip")
+	flags.StringVar(&route53Region, "route53-region", "", "region of route53")
+	flags.StringVar(&route53EndpointURL, "route53-endpoint-url", "", "endpoint url of route53")
 
 	manageEtcd := false
 	flag.BoolVar(&manageEtcd, "manage-etcd", manageEtcd, "Set to manage etcd (deprecated in favor of etcd-manager)")
@@ -336,6 +340,13 @@ func run() error {
 				var lines []string
 				lines = append(lines, "etcd-endpoints = "+dnsServer)
 				lines = append(lines, "zones = "+zones[0])
+				config := "[global]\n" + strings.Join(lines, "\n") + "\n"
+				file = bytes.NewReader([]byte(config))
+			} else if dnsProviderID == route53.ProviderName {
+				glog.V(4).Infof("[protobute] got provider: route53 China, set route53Region: %s, route53EndpointURL: %s", route53Region, route53EndpointURL)
+				var lines []string
+				lines = append(lines, "route53-region = "+route53Region)
+				lines = append(lines, "route53-endpoint-url = "+route53EndpointURL)
 				config := "[global]\n" + strings.Join(lines, "\n") + "\n"
 				file = bytes.NewReader([]byte(config))
 			}

@@ -31,7 +31,7 @@ spec:
       serviceAccount: dns-controller
       containers:
       - name: dns-controller
-        image: kope/dns-controller:1.12.0
+        image: {{DnsControllerImage}}
         command:
 {{ range $arg := DnsControllerArgv }}
         - "{{ $arg }}"
@@ -112,3 +112,4 @@ subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
   name: system:serviceaccount:kube-system:dns-controller
+

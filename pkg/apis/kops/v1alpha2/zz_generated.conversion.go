@@ -2450,6 +2450,9 @@ func autoConvert_v1alpha2_ExternalDNSConfig_To_kops_ExternalDNSConfig(in *Extern
 	out.Disable = in.Disable
 	out.WatchIngress = in.WatchIngress
 	out.WatchNamespace = in.WatchNamespace
+	out.Route53Region = in.Route53Region
+	out.Route53EndpointURL = in.Route53EndpointURL
+	out.Image = in.Image
 	return nil
 }
 
@@ -2462,6 +2465,9 @@ func autoConvert_kops_ExternalDNSConfig_To_v1alpha2_ExternalDNSConfig(in *kops.E
 	out.Disable = in.Disable
 	out.WatchIngress = in.WatchIngress
 	out.WatchNamespace = in.WatchNamespace
+	out.Route53Region = in.Route53Region
+	out.Route53EndpointURL = in.Route53EndpointURL
+	out.Image = in.Image
 	return nil
 }
 

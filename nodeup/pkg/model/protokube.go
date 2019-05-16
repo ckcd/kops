@@ -219,6 +219,8 @@ type ProtokubeFlags struct {
 	TLSCertFile               *string  `json:"tls-cert,omitempty" flag:"tls-cert"`
 	TLSKeyFile                *string  `json:"tls-key,omitempty" flag:"tls-key"`
 	Zone                      []string `json:"zone,omitempty" flag:"zone"`
+	Route53Region             *string  `json:"route53Region,omitempty" flag:"route53-region"`
+	Route53EndpointURL        *string  `json:"route53EndpointUrl,omitempty" flag:"route53-endpoint-url"`
 
 	// ManageEtcd is true if protokube should manage etcd; being replaced by etcd-manager
 	ManageEtcd bool `json:"manageEtcd,omitempty" flag:"manage-etcd"`
@@ -230,6 +232,7 @@ type ProtokubeFlags struct {
 
 // ProtokubeFlags is responsible for building the command line flags for protokube
 func (t *ProtokubeBuilder) ProtokubeFlags(k8sVersion semver.Version) (*ProtokubeFlags, error) {
+	glog.Infoln("CCCCCCC")
 	imageVersion := t.Cluster.Spec.EtcdClusters[0].Version
 	// overrides imageVersion if set
 	etcdContainerImage := t.Cluster.Spec.EtcdClusters[0].Image
@@ -344,7 +347,10 @@ func (t *ProtokubeBuilder) ProtokubeFlags(k8sVersion semver.Version) (*Protokube
 		if f.DNSProvider == nil {
 			switch kops.CloudProviderID(t.Cluster.Spec.CloudProvider) {
 			case kops.CloudProviderAWS:
+				glog.V(4).Infof("[ProtokubeFlags] route53Region: %s, route53EndpointURL: %s", t.Cluster.Spec.ExternalDNS.Route53Region, t.Cluster.Spec.ExternalDNS.Route53EndpointURL)
 				f.DNSProvider = fi.String("aws-route53")
+				f.Route53Region = fi.String(t.Cluster.Spec.ExternalDNS.Route53Region)
+				f.Route53EndpointURL = fi.String(t.Cluster.Spec.ExternalDNS.Route53EndpointURL)
 			case kops.CloudProviderDO:
 				f.DNSProvider = fi.String("digitalocean")
 				f.ClusterID = fi.String(t.Cluster.Name)

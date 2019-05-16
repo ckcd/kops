@@ -370,6 +370,12 @@ type ExternalDNSConfig struct {
 	WatchIngress *bool `json:"watchIngress,omitempty"`
 	// WatchNamespace is namespace to watch, defaults to all (use to control whom can creates dns entries)
 	WatchNamespace string `json:"watchNamespace,omitempty"`
+	// Route53Region indicates region of aws route53
+	Route53Region string `json:"route53Region,omitempty"`
+	// Route53EndpointURL indicates endpoint url of aws route53
+	Route53EndpointURL string `json:"route53EndpointUrl,omitempty"`
+	// Image is the name of the docker image to run
+	Image string `json:"image,omitempty"`
 }
 
 // EtcdProviderType describes etcd cluster provisioning types (Standalone, Manager)

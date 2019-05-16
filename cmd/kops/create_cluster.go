@@ -495,6 +495,16 @@ func RunCreateCluster(f *util.Factory, out io.Writer, c *CreateClusterOptions) e
 	if c.VPCID != "" {
 		cluster.Spec.NetworkID = c.VPCID
 	} else if api.CloudProviderID(cluster.Spec.CloudProvider) == api.CloudProviderAWS && len(c.SubnetIDs) > 0 {
+		// add args for route53-China from ENV
+		route53Region := os.Getenv("ROUTE53_REGION")
+		route53EndpointURL := os.Getenv("ROUTE53_ENDPOINT_URL")
+		glog.V(4).Infof("[createCluster] route53Region: %s, route53EndpointURL: %s", route53Region, route53EndpointURL)
+		if cluster.Spec.ExternalDNS == nil {
+			cluster.Spec.ExternalDNS = &api.ExternalDNSConfig{}
+		}
+		cluster.Spec.ExternalDNS.Route53Region = route53Region
+		cluster.Spec.ExternalDNS.Route53EndpointURL = route53EndpointURL
+
 		cloudTags := map[string]string{}
 		awsCloud, err := awsup.NewAWSCloud(c.Zones[0][:len(c.Zones[0])-1], cloudTags)
 		if err != nil {

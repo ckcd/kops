@@ -91,6 +91,7 @@ func (tf *TemplateFunctions) AddTo(dest template.FuncMap, secretStore fi.SecretS
 
 	dest["DnsControllerArgv"] = tf.DnsControllerArgv
 	dest["ExternalDnsArgv"] = tf.ExternalDnsArgv
+	dest["DnsControllerImage"] = tf.DnsControllerImage
 
 	// TODO: Only for GCE?
 	dest["EncodeGCELabel"] = gce.EncodeGCELabel
@@ -177,6 +178,17 @@ func (tf *TemplateFunctions) GetInstanceGroup(name string) (*kops.InstanceGroup,
 	return nil, fmt.Errorf("InstanceGroup %q not found", name)
 }
 
+// DnsControllerImage returns docker image of dns-controller
+func (tf *TemplateFunctions) DnsControllerImage() string {
+	image := "kope/dns-controller:1.12.0"
+
+	if tf.cluster.Spec.ExternalDNS != nil && tf.cluster.Spec.ExternalDNS.Image != "" {
+		image = tf.cluster.Spec.ExternalDNS.Image
+	}
+
+	return image
+}
+
 // DnsControllerArgv returns the args to the DNS controller
 func (tf *TemplateFunctions) DnsControllerArgv() ([]string, error) {
 	var argv []string
@@ -211,7 +223,12 @@ func (tf *TemplateFunctions) DnsControllerArgv() ([]string, error) {
 	} else {
 		switch kops.CloudProviderID(tf.cluster.Spec.CloudProvider) {
 		case kops.CloudProviderAWS:
-			if strings.HasPrefix(os.Getenv("AWS_REGION"), "cn-") {
+			if tf.cluster.Spec.ExternalDNS != nil && tf.cluster.Spec.ExternalDNS.Route53Region != "" {
+				glog.V(4).Infof("[DnsControllerArgv] route53Region: %s, route53EndpointURL: %s", tf.cluster.Spec.ExternalDNS.Route53Region, tf.cluster.Spec.ExternalDNS.Route53EndpointURL)
+				argv = append(argv, "--dns=aws-route53")
+				argv = append(argv, fmt.Sprintf("--route53-region=%s", tf.cluster.Spec.ExternalDNS.Route53Region))
+				argv = append(argv, fmt.Sprintf("--route53-endpoint-url=%s", tf.cluster.Spec.ExternalDNS.Route53EndpointURL))
+			} else if strings.HasPrefix(os.Getenv("AWS_REGION"), "cn-") {
 				argv = append(argv, "--dns=gossip")
 			} else {
 				argv = append(argv, "--dns=aws-route53")
