@@ -1,0 +1,80 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: scheduler-policy
+  namespace: kube-system
+  labels:
+    k8s-addon: scheduler.addons.k8s.io
+data:
+  policy.cfg: |
+    {
+      "kind" : "Policy",
+      "apiVersion" : "v1",
+      "predicates" : [
+        {"name" : "NoVolumeZoneConflict"},
+        {"name" : "MaxEBSVolumeCount"},
+        {"name" : "MaxGCEPDVolumeCount"},
+        {"name" : "MaxAzureDiskVolumeCount"},
+        {"name" : "MaxCSIVolumeCountPred"},
+        {"name" : "MatchInterPodAffinity"},
+        {"name" : "NoDiskConflict"},
+        {"name" : "GeneralPredicates"},
+        {"name" : "PodToleratesNodeTaints"},
+        {"name" : "CheckNodeUnschedulable"},
+        {"name" : "CheckVolumeBinding"}
+      ],
+      "priorities" : [
+        {"name" : "SelectorSpreadPriority", "weight" : 1},
+        {"name" : "InterPodAffinityPriority", "weight" : 1},
+        {"name" : "MostRequestedPriority", "weight" : 1},
+        {"name" : "BalancedResourceAllocation", "weight" : 1},
+        {"name" : "NodePreferAvoidPodsPriority", "weight" : 1},
+        {"name" : "NodeAffinityPriority", "weight" : 1},
+        {"name" : "TaintTolerationPriority", "weight" : 1},
+        {"name" : "ImageLocalityPriority", "weight" : 1}
+      ],
+      "hardPodAffinitySymmetricWeight" : 10,
+      "alwaysCheckAllPredicates" : false
+    }
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: scheduler-policy
+  namespace: kube-system
+rules:
+- apiGroups:
+  - ""
+  resourceNames:
+  - scheduler-policy
+  - extension-apiserver-authentication
+  resources:
+  - configmaps
+  verbs:
+  - get
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: "true"
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system::scheduler-policy
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: scheduler-policy
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:kube-scheduler
