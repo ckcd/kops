@@ -182,9 +182,17 @@ func (tf *TemplateFunctions) GetInstanceGroup(name string) (*kops.InstanceGroup,
 func (tf *TemplateFunctions) DnsControllerImage() string {
 	image := "kope/dns-controller:1.12.0"
 
+	if tf.cluster.Spec.ExternalDNS == nil {
+		glog.V(4).Infof("[DnsControllerImage] ExternalDNS is nil")
+	} else {
+		glog.V(4).Infof("[DnsControllerImage] Image: %s", tf.cluster.Spec.ExternalDNS.Image)
+	}
+
 	if tf.cluster.Spec.ExternalDNS != nil && tf.cluster.Spec.ExternalDNS.Image != "" {
 		image = tf.cluster.Spec.ExternalDNS.Image
 	}
+
+	glog.V(4).Infof("[DnsControllerImage] After update, Image: %s", image)
 
 	return image
 }

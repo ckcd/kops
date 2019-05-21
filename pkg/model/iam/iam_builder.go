@@ -899,4 +899,3 @@ func createResource(b *PolicyBuilder) stringorslice.StringOrSlice {
 	}
 	return resource
 }
-

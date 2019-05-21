@@ -31,7 +31,7 @@ spec:
       serviceAccount: dns-controller
       containers:
       - name: dns-controller
-        image: {{DnsControllerImage}}
+        image: {{ DnsControllerImage }}
         command:
 {{ range $arg := DnsControllerArgv }}
         - "{{ $arg }}"

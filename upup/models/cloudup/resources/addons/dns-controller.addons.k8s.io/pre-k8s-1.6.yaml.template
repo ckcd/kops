@@ -28,7 +28,7 @@ spec:
       hostNetwork: true
       containers:
       - name: dns-controller
-        image: {{DnsControllerImage}}
+        image: {{ DnsControllerImage }}
         command:
 {{ range $arg := DnsControllerArgv }}
         - "{{ $arg }}"

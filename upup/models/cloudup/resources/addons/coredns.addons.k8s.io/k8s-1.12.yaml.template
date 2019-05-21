@@ -70,7 +70,10 @@ data:
         prometheus :9153
         forward . /etc/resolv.conf
         loop
-        cache 30
+        cache {
+          success {{ KubeDNS.CacheMaxSize }} 60
+          denial {{ KubeDNS.CacheMaxSize }} 30
+        }
         loadbalance
         reload
     }
@@ -188,3 +191,100 @@ spec:
   - name: metrics
     port: 9153
     protocol: TCP
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-dns-autoscaler
+  namespace: kube-system
+  labels:
+    k8s-addon: kube-dns.addons.k8s.io
+    k8s-app: kube-dns-autoscaler
+    kubernetes.io/cluster-service: "true"
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kube-dns-autoscaler
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-dns-autoscaler
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ''
+    spec:
+      containers:
+      - name: autoscaler
+        image: k8s.gcr.io/cluster-proportional-autoscaler-{{Arch}}:1.4.0
+        resources:
+            requests:
+                cpu: "20m"
+                memory: "10Mi"
+        command:
+          - /cluster-proportional-autoscaler
+          - --namespace=kube-system
+          - --configmap=kube-dns-autoscaler
+          # Should keep target in sync with cluster/addons/dns/kubedns-controller.yaml.base
+          - --target=Deployment/coredns
+          # When cluster is using large nodes(with more cores), "coresPerReplica" should dominate.
+          # If using small nodes, "nodesPerReplica" should dominate.
+          - --default-params={"linear":{"coresPerReplica":256,"nodesPerReplica":16,"preventSinglePointFailure":true}}
+          - --logtostderr=true
+          - --v=2
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      serviceAccountName: kube-dns-autoscaler
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-dns-autoscaler
+  namespace: kube-system
+  labels:
+    k8s-addon: kube-dns.addons.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    k8s-addon: kube-dns.addons.k8s.io
+  name: kube-dns-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list","watch"]
+  - apiGroups: [""]
+    resources: ["replicationcontrollers/scale"]
+    verbs: ["get", "update"]
+  - apiGroups: ["extensions", "apps"]
+    resources: ["deployments/scale", "replicasets/scale"]
+    verbs: ["get", "update"]
+# Remove the configmaps rule once below issue is fixed:
+# kubernetes-incubator/cluster-proportional-autoscaler#16
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "create"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    k8s-addon: kube-dns.addons.k8s.io
+  name: kube-dns-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-dns-autoscaler
+subjects:
+- kind: ServiceAccount
+  name: kube-dns-autoscaler
+  namespace: kube-system
+
