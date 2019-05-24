@@ -141,6 +141,8 @@ type AmazonVPCNetworkingSpec struct {
 	// The container image name to use, which by default is:
 	// 602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon-k8s-cni:1.0.0
 	ImageName string `json:"imageName,omitempty"`
+	// WarmIPTarget is the WARM_IP_TARGET that aws-cni used.
+	WarmIPTarget *int32 `json:"warmIPTarget,omitempty"`
 }
 
 type CiliumNetworkingSpec struct {
