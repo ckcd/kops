@@ -92,6 +92,10 @@ type CalicoNetworkingSpec struct {
 	PrometheusProcessMetricsEnabled bool `json:"prometheusProcessMetricsEnabled,omitempty"`
 	// MajorVersion is the version of Calico to use
 	MajorVersion string `json:"majorVersion,omitempty"`
+	// RegistryName is the docker registry for all images of calico, default is: "quay.io"
+	RegistryName string `json:"registryName,omitempty"`
+	// ImageTag is the tag for all images of calico, default is: "v3.4.0"
+	ImageTag string `json:"imageTag,omitempty"`
 }
 
 // CanalNetworkingSpec declares that we want Canal networking

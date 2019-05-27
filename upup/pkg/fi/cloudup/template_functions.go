@@ -135,6 +135,25 @@ func (tf *TemplateFunctions) AddTo(dest template.FuncMap, secretStore fi.SecretS
 		dest["WeaveSecret"] = func() string { return weavesecretString }
 	}
 
+	if tf.cluster.Spec.Networking != nil && tf.cluster.Spec.Networking.Calico != nil {
+		registryName := "quay.io"
+		imageTag := "v3.3.0"
+
+		if tf.cluster.Spec.Networking.Calico.RegistryName != "" {
+			registryName = tf.cluster.Spec.Networking.Calico.RegistryName
+		} else {
+			glog.V(4).Infof("[CalicoRegistryName] registryName is empty")
+		}
+		if tf.cluster.Spec.Networking.Calico.ImageTag != "" {
+			imageTag = tf.cluster.Spec.Networking.Calico.ImageTag
+		} else {
+			glog.V(4).Infof("[CalicoImageTag] imageTag is empty")
+		}
+
+		dest["CalicoRegistryName"] = func() string { return registryName }
+		dest["CalicoImageTag"] = func() string { return imageTag }
+	}
+
 	return nil
 }
 
